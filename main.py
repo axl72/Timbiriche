@@ -83,6 +83,8 @@ class Game:
                 value = 2 if y1 != y2 and (x1 != 7 and x2 != 7) else 5 if y1 != y2 and (x1 == 7 or x2 == 7) else 3 if x1 != x2 and (y1 == 0 or y2 == 0) else 7
                 print(index_houses)
                 self.table.set_cable(index_houses[0], index_houses[1], value)
+                
+                self.current_player = not self.current_player    
                 return 
 
             index_houses = [(int(abs(x1+x2)/2), int(y1)), (int(abs(x1+x2)/2), int(y1-1))] if (abs(x1 - x2) == 1 and y1 == y2) else [(int(x1), (int(abs(y1+y2)/2))), (int(x1-1), int(abs(y1+y2)/2))]
@@ -98,8 +100,9 @@ class Game:
             elif a1 - a2 < 0 or b1 - b2 < 0:
                 self.table.set_cable(index_houses[0][0], index_houses[0][1], values[1])
                 self.table.set_cable(index_houses[1][0], index_houses[1][1], values[0])
-                   
-        return False
+
+            self.current_player = not self.current_player    
+        
 
     def game(self):
         self.screen.fill(colors["blue"])
