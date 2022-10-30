@@ -8,13 +8,13 @@ import numpy as np
 from typing import Optional
 from Bot import Bot
 from GameState import GameState
-from MinimaxBot import MinimaxBot
 
 # * Import your bot
 from RandomBot import RandomBot
+from MinimaxBot import MinimaxBot
 
 size_of_board = 600
-number_of_dots = 4
+number_of_dots = 3
 symbol_size = (size_of_board / 3 - size_of_board / 8) / 2
 symbol_thickness = 50
 dot_color = '#7BC043'
@@ -322,8 +322,9 @@ class Dots_and_Boxes():
 
         # input()
         self.update(action.action_type, action.position)
-        # print("Tablero actual")
-        # print(self.board_status)
+        print("Tablero actual - Juega: ", self.player1_turn)
+        print(self.board_status)
+        print("==========================")
         # print()
         # print(self.row_status)
         # print()
