@@ -1,188 +1,341 @@
-from audioop import mul
-from nis import match
-import pygame
-import sys
-import os
-from core.button import Button
-from core.model import House, Circle, Cable
-from core.table import Table
+# Author: aqeelanwar
+# Created: 13 March,2020, 9:19 PM
+# Email: aqeel.anwar@gatech.edu
+# Modified by GaIB 19 Assistants
 
-colors = {"blue": (88, 114, 138), 
-        "grey": (200, 189, 183),
-        "white": (255, 255, 255),
-        "sky": (251, 255, 255),
-        "dark blue": (11, 46, 89),
-        "red": (204, 0, 102)}
+from tkinter import *
+import numpy as np
+from typing import Optional
+from Bot import Bot
+from GameState import GameState
+from MinimaxBot import MinimaxBot
 
-class Game:
-    def __init__(self):
-        pygame.init()
-        self.screen = pygame.display.set_mode((1200, 900))
-        self.resources = "assets"
-        self.name_font = "Quarterback.otf"
-        self.status = "menu"
-        self.clock = pygame.time.Clock()
-        self.get_mouse_pos = pygame.mouse.get_pos
-        self.click_event = pygame.mouse.get_pressed
-        self.houses = pygame.sprite.Group()
-        self.current_player = True
-        self.table = Table(7, 7)
-        self.cordenates_circles = {"x": (100, 250, 400, 550, 700, 850, 1000, 1150), "y": (80, 180, 280, 380, 480, 580, 680, 780)}
-        self.cordenates_houses = {"x": (145, 295, 445, 595, 745, 895, 1045), "y": (105, 205, 305, 405, 505, 605, 705)}
-        self.circles_list = [[Circle(x, y, (row, column)) for column, y in enumerate(self.cordenates_circles["y"])] for row, x in enumerate(self.cordenates_circles["x"])]
-        self.houses_list = [[House((x, y)) for x in self.cordenates_houses["x"]] for y in self.cordenates_houses["y"]]
-        self.houses.add(house for house in self.houses_list)
-        self.clicked_circles = set()
-        self.cordenates = {
-            
-        }
-    
-    def __draw_line__(self, x, y, status):
-        if status == 1:
-            return
+# * Import your bot
+from RandomBot import RandomBot
 
-        cordenates = {2: ((x, y), (x, y+1)), 
-            3: ((x, y), (x+1, y)),
-            5: ((x+1, y), (x+1, y+1)),
-            7: ((x, y+1), (x+1, y +1))}
-        
-        for multiple in (2, 3, 5, 7):
-            if not status % multiple:
-                a, b = cordenates[multiple]
-                x1, y1 = a
-                x2, y2 = b
-                circle_start = self.circles_list[x1][y1]
-                circle_end = self.circles_list[x2][y2]
-                cordenate_start = circle_start.get_cordenates()
-                cordenate_end = circle_end.get_cordenates()
-                pygame.draw.line(self.screen, (0, 0, 0), cordenate_start, cordenate_end, 2)
-    
+size_of_board = 600
+number_of_dots = 4
+symbol_size = (size_of_board / 3 - size_of_board / 8) / 2
+symbol_thickness = 50
+dot_color = '#7BC043'
+player1_color = '#0492CF'
+player1_color_light = '#67B0CF'
+player2_color = '#EE4035'
+player2_color_light = '#EE7E77'
+Green_color = '#7BC043'
+dot_width = 0.25*size_of_board/number_of_dots
+edge_width = 0.1*size_of_board/number_of_dots
+distance_between_dots = size_of_board / (number_of_dots)
 
-    def __logic_game__(self, cordenates):
-        if len(self.clicked_circles) == 0:
-            self.clicked_circles.add(cordenates)
-        
-        elif len(self.clicked_circles) == 1:
-            x1, y1 = list(self.clicked_circles)[0]
-            x2, y2 = cordenates
-            if (abs(x1 - x2) == 1 and y1 == y2) or ((abs(y1 - y2) == 1 and x1 == x2)): 
-                self.clicked_circles.add(cordenates)
-
-        if len(self.clicked_circles) == 2:
-            x1, y1 = self.clicked_circles.pop()
-            x2, y2 = self.clicked_circles.pop()
-            print((x1, y1), " & ", (x2, y2))
-
-            is_border =  True if ((x1 == 0 and x2 == 0) or (y1 == 0 and y2 == 0)) or ((x1 == 7 and x2 == 7) or (y1 == 7 and y2 == 7)) else False
-
-            if is_border:
-                if y1 != 7 and y2 != 7 and x1 != 7 and x2 != 7:
-                    index_houses = (int(abs(x1 + x2)/2), int(y1)) if abs(x1 - x2) == 1 and y1 == y2 else (int(x1), int(abs(y1 + y2)/2))
-                else :
-                    index_houses = (int(abs(x1 + x2)/2), int(y1-1)) if abs(x1 - x2) == 1 and y1 == y2 else (int(x1-1), int(abs(y1 + y2)/2))
-                value = 2 if y1 != y2 and (x1 != 7 and x2 != 7) else 5 if y1 != y2 and (x1 == 7 or x2 == 7) else 3 if x1 != x2 and (y1 == 0 or y2 == 0) else 7
-                print(index_houses)
-                self.table.set_cable(index_houses[0], index_houses[1], value)
-                
-                self.current_player = not self.current_player    
-                return 
-
-            index_houses = [(int(abs(x1+x2)/2), int(y1)), (int(abs(x1+x2)/2), int(y1-1))] if (abs(x1 - x2) == 1 and y1 == y2) else [(int(x1), (int(abs(y1+y2)/2))), (int(x1-1), int(abs(y1+y2)/2))]
-
-            values = (2, 5) if y1 != y2 else (3, 7)
-
-            a1, b1 = index_houses[0]
-            a2, b2 = index_houses[1]
-            print(index_houses)
-            if a1 - a2 > 0 or b1 - b2 > 0:
-                self.table.set_cable(index_houses[0][0], index_houses[0][1], values[0])
-                self.table.set_cable(index_houses[1][0], index_houses[1][1], values[1])
-            elif a1 - a2 < 0 or b1 - b2 < 0:
-                self.table.set_cable(index_houses[0][0], index_houses[0][1], values[1])
-                self.table.set_cable(index_houses[1][0], index_houses[1][1], values[0])
-
-            self.current_player = not self.current_player    
-        
-
-    def game(self):
-        self.screen.fill(colors["blue"])
-
-        for x, row in enumerate(self.table.setup):
-            for y, value in enumerate(row):
-                self.__draw_line__(x, y, value)
-
-        [circle.draw(self.screen) for row in self.circles_list for circle in row]
-        self.houses.draw(self.screen) 
-        
-        cordenates = self.get_mouse_pos()
-
-        for row in self.circles_list:
-            for circle in row:
-                if circle.is_point_in(cordenates):
-                    if self.click_event()[0]:
-                        self.__logic_game__(circle.get_indexes())
-
-    def start_game(self):
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        #self.status = "menu"
-                        self.clicked_circles.clear()
-
-                if event.type == pygame.QUIT:
-                    sys.exit()
-
-            if self.status == "menu":
-                self.menu()
-            
-            if self.status == "game":
-                self.game()
-
-            pygame.display.flip()
-            self.clock.tick(10)
+BOT_TURN_INTERVAL_MS = 100
+LEFT_CLICK = '<Button-1>'
 
 
-    def menu(self):
-        """method to show game menu"""
-        self.screen.fill(colors["blue"])
+class Dots_and_Boxes():
+    # ------------------------------------------------------------------
+    # Initialization functions
+    # ------------------------------------------------------------------
+    def __init__(self, bot1: Optional[Bot] = None, bot2: Optional[Bot] = None):
+        self.window = Tk()
+        self.window.title('Dots_and_Boxes')
+        self.canvas = Canvas(
+            self.window, width=size_of_board, height=size_of_board)
+        self.canvas.pack()
+        self.player1_starts = True
+        self.refresh_board()
 
-     
-        grey_color = colors["grey"]
-        path_font = os.path.join(self.resources, self.name_font)
-        big_font = pygame.font.Font(path_font, 50)
-        small_font = pygame.font.Font(path_font, 20)
+        self.bot1 = bot1
+        self.bot2 = bot2
+        self.play_again()
 
-        welcome_text = big_font.render("Cable vs ADSL", True, grey_color)
-        created_by = small_font.render("Created by axl72", True, grey_color)
+    def play_again(self):
+        self.refresh_board()
+        self.board_status = np.zeros(
+            shape=(number_of_dots - 1, number_of_dots - 1))
+        self.row_status = np.zeros(shape=(number_of_dots, number_of_dots - 1))
+        self.col_status = np.zeros(shape=(number_of_dots - 1, number_of_dots))
+        self.pointsScored = False
 
-     
+        # Input from user in form of clicks
+        self.player1_starts = not self.player1_starts
+        self.player1_turn = not self.player1_starts
+        self.reset_board = False
+        self.turntext_handle = []
 
-        img = pygame.image.load(os.path.join(self.resources, "Options Rect.png"))
+        self.already_marked_boxes = []
+        self.display_turn_text()
 
-        play_button = Button(image=img, pos=(570, 350), text_input="Play", font=small_font, base_color="#d7fcd4", hovering_color="Red")
-        options_button = Button(image=img, pos=(570, 500), text_input="Options", font=small_font, base_color="#d7fcd4", hovering_color="Red")
+        self.turn()
 
-        for button in [play_button, options_button]:
-             button.changeColor(pygame.mouse.get_pos())
-             button.update(self.screen)
+    def mainloop(self):
+        self.window.mainloop()
 
-        self.screen.blit(welcome_text, 
-                      ((self.screen.get_width() - welcome_text.get_width()) // 2, 
-                      150))
-        # show credit text
-        self.screen.blit(created_by, 
-                      ((self.screen.get_width() - created_by.get_width()) // 2, 
-                      self.screen.get_height() - created_by.get_height() - 100))
+    # ------------------------------------------------------------------
+    # Logical Functions:
+    # The modules required to carry out game logic
+    # ------------------------------------------------------------------
 
-        if play_button.checkForInput(self.get_mouse_pos()):
-            if self.click_event()[0]:
-                self.status = "game"
+    def is_grid_occupied(self, logical_position, type):
+        x = logical_position[0]
+        y = logical_position[1]
+        occupied = True
 
-        if options_button.checkForInput(self.get_mouse_pos()):
-            if self.click_event()[0]:
-                self.status = "options"
-        
+        if type == 'row' and self.row_status[y][x] == 0:
+            occupied = False
+        if type == 'col' and self.col_status[y][x] == 0:
+            occupied = False
+
+        return occupied
+
+    def convert_grid_to_logical_position(self, grid_position):
+        grid_position = np.array(grid_position)
+        position = (grid_position-distance_between_dots /
+                    4)//(distance_between_dots/2)
+
+        type = False
+        logical_position = []
+        if position[1] % 2 == 0 and (position[0] - 1) % 2 == 0:
+            x = int((position[0]-1)//2)
+            y = int(position[1]//2)
+            logical_position = [x, y]
+            type = 'row'
+            # self.row_status[c][r]=1
+        elif position[0] % 2 == 0 and (position[1] - 1) % 2 == 0:
+            y = int((position[1] - 1) // 2)
+            x = int(position[0] // 2)
+            logical_position = [x, y]
+            type = 'col'
+
+        return logical_position, type
+
+    def pointScored(self):
+        self.pointsScored = True
+
+    def mark_box(self):
+        boxes = np.argwhere(self.board_status == -4)
+        for box in boxes:
+            if list(box) not in self.already_marked_boxes and list(box) != []:
+                self.already_marked_boxes.append(list(box))
+                color = player1_color_light
+                self.shade_box(box, color)
+
+        boxes = np.argwhere(self.board_status == 4)
+        for box in boxes:
+            if list(box) not in self.already_marked_boxes and list(box) != []:
+                self.already_marked_boxes.append(list(box))
+                color = player2_color_light
+                self.shade_box(box, color)
+
+    def update_board(self, type, logical_position):
+        x = logical_position[0]
+        y = logical_position[1]
+        val = 1
+        playerModifier = -1 if self.player1_turn else 1
+
+        if y < (number_of_dots-1) and x < (number_of_dots-1):
+            self.board_status[y][x] = (
+                abs(self.board_status[y][x]) + val) * playerModifier
+            if abs(self.board_status[y][x]) == 4:
+                self.pointScored()
+
+        if type == 'row':
+            self.row_status[y][x] = 1
+            if y >= 1:
+                self.board_status[y-1][x] = (abs(self.board_status[y-1]
+                                             [x]) + val) * playerModifier
+                if abs(self.board_status[y-1][x]) == 4:
+                    self.pointScored()
+
+        elif type == 'col':
+            self.col_status[y][x] = 1
+            if x >= 1:
+                self.board_status[y][x -
+                                     1] = (abs(self.board_status[y][x-1]) + val) * playerModifier
+                if abs(self.board_status[y][x-1]) == 4:
+                    self.pointScored()
+
+    def is_gameover(self):
+        return (self.row_status == 1).all() and (self.col_status == 1).all()
+
+    # ------------------------------------------------------------------
+    # Drawing Functions:
+    # The modules required to draw required game based object on canvas
+    # ------------------------------------------------------------------
+
+    def make_edge(self, type, logical_position):
+        if type == 'row':
+            start_x = distance_between_dots/2 + \
+                logical_position[0]*distance_between_dots
+            end_x = start_x+distance_between_dots
+            start_y = distance_between_dots/2 + \
+                logical_position[1]*distance_between_dots
+            end_y = start_y
+        elif type == 'col':
+            start_y = distance_between_dots / 2 + \
+                logical_position[1] * distance_between_dots
+            end_y = start_y + distance_between_dots
+            start_x = distance_between_dots / 2 + \
+                logical_position[0] * distance_between_dots
+            end_x = start_x
+
+        if self.player1_turn:
+            color = player1_color
+        else:
+            color = player2_color
+        self.canvas.create_line(start_x, start_y, end_x,
+                                end_y, fill=color, width=edge_width)
+
+    def display_gameover(self):
+        player1_score = len(np.argwhere(self.board_status == -4))
+        player2_score = len(np.argwhere(self.board_status == 4))
+
+        if player1_score > player2_score:
+            # Player 1 wins
+            text = 'Winner: Player 1 '
+            color = player1_color
+        elif player2_score > player1_score:
+            text = 'Winner: Player 2 '
+            color = player2_color
+        else:
+            text = 'Its a tie'
+            color = 'gray'
+
+        self.canvas.delete("all")
+        self.canvas.create_text(
+            size_of_board / 2, size_of_board / 3, font="cmr 60 bold", fill=color, text=text)
+
+        score_text = 'Scores \n'
+        self.canvas.create_text(size_of_board / 2, 5 * size_of_board / 8, font="cmr 40 bold", fill=Green_color,
+                                text=score_text)
+
+        score_text = 'Player 1 : ' + str(player1_score) + '\n'
+        score_text += 'Player 2 : ' + str(player2_score) + '\n'
+        # score_text += 'Tie                    : ' + str(self.tie_score)
+        self.canvas.create_text(size_of_board / 2, 3 * size_of_board / 4, font="cmr 30 bold", fill=Green_color,
+                                text=score_text)
+        self.reset_board = True
+
+        score_text = 'Click to play again \n'
+        self.canvas.create_text(size_of_board / 2, 15 * size_of_board / 16, font="cmr 20 bold", fill="gray",
+                                text=score_text)
+
+    def refresh_board(self):
+        for i in range(number_of_dots):
+            x = i*distance_between_dots+distance_between_dots/2
+            self.canvas.create_line(x, distance_between_dots/2, x,
+                                    size_of_board-distance_between_dots/2,
+                                    fill='gray', dash=(2, 2))
+            self.canvas.create_line(distance_between_dots/2, x,
+                                    size_of_board-distance_between_dots/2, x,
+                                    fill='gray', dash=(2, 2))
+
+        for i in range(number_of_dots):
+            for j in range(number_of_dots):
+                start_x = i*distance_between_dots+distance_between_dots/2
+                end_x = j*distance_between_dots+distance_between_dots/2
+                self.canvas.create_oval(start_x-dot_width/2, end_x-dot_width/2, start_x+dot_width/2,
+                                        end_x+dot_width/2, fill=dot_color,
+                                        outline=dot_color)
+
+    def display_turn_text(self):
+        text = 'Next turn: '
+        if self.player1_turn:
+            text += 'Player1'
+            color = player1_color
+        else:
+            text += 'Player2'
+            color = player2_color
+
+        self.canvas.delete(self.turntext_handle)
+        self.turntext_handle = self.canvas.create_text(size_of_board - 5*len(text),
+                                                       size_of_board-distance_between_dots/8,
+                                                       font="cmr 15 bold", text=text, fill=color)
+
+    def shade_box(self, box, color):
+        start_x = distance_between_dots / 2 + \
+            box[1] * distance_between_dots + edge_width/2
+        start_y = distance_between_dots / 2 + \
+            box[0] * distance_between_dots + edge_width/2
+        end_x = start_x + distance_between_dots - edge_width
+        end_y = start_y + distance_between_dots - edge_width
+        self.canvas.create_rectangle(
+            start_x, start_y, end_x, end_y, fill=color, outline='')
+
+    def display_turn_text(self):
+        text = 'Next turn: '
+        if self.player1_turn:
+            text += 'Player1'
+            color = player1_color
+        else:
+            text += 'Player2'
+            color = player2_color
+
+        self.canvas.delete(self.turntext_handle)
+        self.turntext_handle = self.canvas.create_text(size_of_board - 5*len(text),
+                                                       size_of_board-distance_between_dots/8,
+                                                       font="cmr 15 bold", text=text, fill=color)
+
+    def click(self, event):
+        if not self.reset_board:
+            grid_position = [event.x, event.y]
+            logical_position, valid_input = self.convert_grid_to_logical_position(
+                grid_position)
+            self.update(valid_input, logical_position)
+        else:
+            self.canvas.delete("all")
+            self.play_again()
+            self.reset_board = False
+
+    def update(self, valid_input, logical_position):
+        if valid_input and not self.is_grid_occupied(logical_position, valid_input):
+            self.window.unbind(LEFT_CLICK)
+            self.update_board(valid_input, logical_position)
+            self.make_edge(valid_input, logical_position)
+            self.mark_box()
+            self.refresh_board()
+            self.player1_turn = (
+                not self.player1_turn) if not self.pointsScored else self.player1_turn
+            self.pointsScored = False
+
+            if self.is_gameover():
+                # self.canvas.delete("all")
+                self.display_gameover()
+                self.window.bind(LEFT_CLICK, self.click)
+            else:
+                self.display_turn_text()
+                self.turn()
+
+    def turn(self):
+        current_bot = self.bot1 if self.player1_turn else self.bot2
+        if current_bot is None:
+            self.window.bind(LEFT_CLICK, self.click)
+        else:
+            self.window.after(BOT_TURN_INTERVAL_MS, self.bot_turn, current_bot)
+
+    def bot_turn(self, bot: Bot):
+        action = bot.get_action(GameState(
+            self.board_status.copy(),
+            self.row_status.copy(),
+            self.col_status.copy(),
+            self.player1_turn
+        ))
+
+        # input()
+        self.update(action.action_type, action.position)
+        # print("Tablero actual")
+        # print(self.board_status)
+        # print()
+        # print(self.row_status)
+        # print()
+        # print(self.col_status)
+
+
 if __name__ == "__main__":
-    game = Game()
-    game.start_game()
+    """
+    Change game_instance initialization below to change game mode
+    PvP mode: game_instance = Dots_and_Boxes(None, None)
+    PvB mode: game_instance = Dots_and_Boxes(None, BotName()) or game_instance = Dots_and_Boxes(BotName(), None)
+    BvB mode: game_instance = Dots_and_Boxes(BotName(), BotName())
+    """
+    game_instance = Dots_and_Boxes(None, MinimaxBot())
+    game_instance.mainloop()
