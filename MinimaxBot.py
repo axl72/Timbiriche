@@ -44,7 +44,6 @@ def realizar_jugada(table: GameState, indice: tuple[int, int], indice_visual: tu
     elif jugada == "abajo":
         table.row_status[x2][y2] += 1
         if x < len(table.board_status) - 1:
-            # print("Se modifico: ", (x+1, y))
             table.board_status[x +
                                1][y] = (abs(table.board_status[x+1][y]) + 1)*playerModifier
 
@@ -109,79 +108,49 @@ def get_utility(estado: GameState, profundidad: int) -> int:
 
     cantidad_0 = contar(estado.board_status, 0)
 
-    utility = cantidad_4_max*1000 + cantidad_4_min*-1000 + cantidad_3 * \
-        4*-modificador + cantidad_2*3*-modificador + \
+    utility = cantidad_4_max*40000 + cantidad_4_min*-40000 + cantidad_3 * \
+        20000*modificador + cantidad_2*3*modificador + \
         (cantidad_1*2 + cantidad_0*1)*modificador
-    # if estado.player1_turn:
-    #     utility = cantidad_4_max*11 + cantidad_4_min*-11 + cantidad_3 * \
-    #         5 + cantidad_2*-1 + cantidad_0
-    # else:
-    #     utility = cantidad_4_min*11 + cantidad_4_max*-11 + \
-    #         cantidad_3*4 + cantidad_2*1 + cantidad_0
-    print("Estado analizado")
-    print(estado.board_status)
-    print(f"Juega jugador 1: {estado.player1_turn} - 4_min: {cantidad_4_min} - 4_max: {cantidad_4_max} - cantidad_3: {cantidad_3} - cantidad_2 {cantidad_2} - cantidad1 - {cantidad_1} - cantidad_0 {cantidad_0} - Utilidad: {utility}")
+
     return utility
 
 
 def minimax(estado_inicial: GameState, profundidad: int):
     maximizing = estado_inicial.player1_turn
-    # print(estado_inicial)
-    # print(estado_inicial.is_terminal())
-    # print("=========================")
+
     if estado_inicial.is_terminal() or profundidad == 0:
         utility = get_utility(estado_inicial, profundidad)
-        # print(utility)
         return utility
 
     if maximizing:
         value = -float('inf')
         for jugada in generar_jugadas(estado_inicial):
             value = max(value, minimax(jugada, profundidad - 1))
-        # print(value)
         return value
     else:
         value = float('inf')
         for jugada in generar_jugadas(estado_inicial):
             value = min(value, minimax(jugada, profundidad - 1))
-        # print("Utilidad escogida", value)
         return value
 
 
 class MinimaxBot(Bot):
-    profundidad = 2
+    profundidad = 0
 
     def get_action(self, state: GameState) -> GameAction:
         maximizing = state.player1_turn
         movimiento = None
-        # if maximizing:
-        #     maximo = -float('inf')
-        #     for jugada in generar_jugadas(state):
-        #         result = minimax(
-        #             jugada, MinimaxBot.profundidad)
-        #         if result > maximo:
-        #             maximo = result
-        #             movimiento = jugada
-        # else:
+
         minimo = float('inf')
-        # print(f"Le toca jugar {'max' if state.player1_turn else 'min'}")
-        # print("Tablero generados")
+
         for jugada in generar_jugadas(state):
-            # print(jugada)
+
             result = minimax(
                 jugada, MinimaxBot.profundidad)
             if result < minimo:
                 minimo = result
                 movimiento = jugada
-        # if movimiento == None:
-        #     print("ESTADO QUE GENERA EL NULO")
-        #     print(state)
-        #     estado = generar_jugadas(state)
-        #     print("Estado de primer nivel")
-        #     print(estado[0])
-        #     print("Estado de segundo nivel")
-        #     print(generar_jugadas(estado[0]))
-        #     input()
+
         return self.__get_game_action__(state, movimiento)
 
     def __comparar_matrices__(self, matrix1, matrix2) -> tuple[int, int] or None:

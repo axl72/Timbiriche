@@ -1,8 +1,3 @@
-# Author: aqeelanwar
-# Created: 13 March,2020, 9:19 PM
-# Email: aqeel.anwar@gatech.edu
-# Modified by GaIB 19 Assistants
-
 from tkinter import *
 import numpy as np
 from typing import Optional
@@ -14,7 +9,7 @@ from RandomBot import RandomBot
 from MinimaxBot import MinimaxBot
 
 size_of_board = 600
-number_of_dots = 3
+number_of_dots = 8
 symbol_size = (size_of_board / 3 - size_of_board / 8) / 2
 symbol_thickness = 50
 dot_color = '#7BC043'
@@ -32,9 +27,7 @@ LEFT_CLICK = '<Button-1>'
 
 
 class Dots_and_Boxes():
-    # ------------------------------------------------------------------
-    # Initialization functions
-    # ------------------------------------------------------------------
+
     def __init__(self, bot1: Optional[Bot] = None, bot2: Optional[Bot] = None):
         self.window = Tk()
         self.window.title('Dots_and_Boxes')
@@ -69,11 +62,6 @@ class Dots_and_Boxes():
 
     def mainloop(self):
         self.window.mainloop()
-
-    # ------------------------------------------------------------------
-    # Logical Functions:
-    # The modules required to carry out game logic
-    # ------------------------------------------------------------------
 
     def is_grid_occupied(self, logical_position, type):
         x = logical_position[0]
@@ -157,11 +145,6 @@ class Dots_and_Boxes():
     def is_gameover(self):
         return (self.row_status == 1).all() and (self.col_status == 1).all()
 
-    # ------------------------------------------------------------------
-    # Drawing Functions:
-    # The modules required to draw required game based object on canvas
-    # ------------------------------------------------------------------
-
     def make_edge(self, type, logical_position):
         if type == 'row':
             start_x = distance_between_dots/2 + \
@@ -190,7 +173,6 @@ class Dots_and_Boxes():
         player2_score = len(np.argwhere(self.board_status == 4))
 
         if player1_score > player2_score:
-            # Player 1 wins
             text = 'Winner: Player 1 '
             color = player1_color
         elif player2_score > player1_score:
@@ -210,7 +192,6 @@ class Dots_and_Boxes():
 
         score_text = 'Player 1 : ' + str(player1_score) + '\n'
         score_text += 'Player 2 : ' + str(player2_score) + '\n'
-        # score_text += 'Tie                    : ' + str(self.tie_score)
         self.canvas.create_text(size_of_board / 2, 3 * size_of_board / 4, font="cmr 30 bold", fill=Green_color,
                                 text=score_text)
         self.reset_board = True
@@ -320,23 +301,12 @@ class Dots_and_Boxes():
             self.player1_turn
         ))
 
-        # input()
         self.update(action.action_type, action.position)
         print("Tablero actual - Juega: ", self.player1_turn)
         print(self.board_status)
         print("==========================")
-        # print()
-        # print(self.row_status)
-        # print()
-        # print(self.col_status)
 
 
 if __name__ == "__main__":
-    """
-    Change game_instance initialization below to change game mode
-    PvP mode: game_instance = Dots_and_Boxes(None, None)
-    PvB mode: game_instance = Dots_and_Boxes(None, BotName()) or game_instance = Dots_and_Boxes(BotName(), None)
-    BvB mode: game_instance = Dots_and_Boxes(BotName(), BotName())
-    """
     game_instance = Dots_and_Boxes(None, MinimaxBot())
     game_instance.mainloop()
